@@ -1,138 +1,190 @@
 import React, { useState } from 'react';
-import { Activity, User, Calendar, Settings, Smile, Frown, Brain, Clock, ShieldCheck } from 'lucide-react';
+import {
+  Activity, Home, FileText, User // Icons used in Mobile Nav
+} from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Brain, Settings } from 'lucide-react';
+
+// Import New Components
+import Sidebar from './Sidebar';
+import HomeTab from './HomeTab';
+import ProfileTab from './ProfileTab';
+import DetailView from './DetailView';
+import Toast from './Toast';
 
 const Dashboard = () => {
-  // FUTURE INTEGRATION: Replace this state with a 'useEffect' hook 
-  // that fetches data from 'http://localhost:3000/logs' (your NestJS backend).
-  const [selectedLog, setSelectedLog] = useState(null);
-
-  // MOCK DATA: Mirrors the "Recent Documents" and "Appointments" style from your references.
-  const mockLogs = [
-    { 
-      id: 1, 
-      time: '14:08', 
-      date: 'Feb 3, 2026', 
-      type: 'Hand Flapping', 
-      emotion: 'Happy', 
-      confidence: 0.94, 
-      image: 'https://images.unsplash.com/photo-1620121692029-d088224efc74?q=80&w=400', // Mock capture
+  // MOCK INITIAL DATA
+  const initialLogs = [
+    {
+      id: 1,
+      time: '14:08',
+      date: 'Feb 3, 2026',
+      type: 'Hand Flapping',
+      emotion: 'Happy',
+      confidence: 0.94,
+      image: 'https://images.unsplash.com/photo-1620121692029-d088224efc74?q=80&w=400',
       details: 'Repetitive hand movement detected for 15 seconds.'
     },
-    { 
-      id: 2, 
-      time: '09:16', 
-      date: 'Feb 3, 2026', 
-      type: 'Rocking', 
-      emotion: 'Anxious', 
-      confidence: 0.88, 
+    {
+      id: 2,
+      time: '09:16',
+      date: 'Feb 3, 2026',
+      type: 'Rocking',
+      emotion: 'Anxious',
+      confidence: 0.88,
       image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=400',
       details: 'Rhythmic swaying detected while sitting near the window.'
+    },
+    {
+      id: 3,
+      time: '08:45',
+      date: 'Feb 3, 2026',
+      type: 'Pacing',
+      emotion: 'Neutral',
+      confidence: 0.92,
+      image: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=400',
+      details: 'Continuous walking back and forth in the living room.'
     }
   ];
 
+  const [logs, setLogs] = useState(initialLogs);
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [activeTab, setActiveTab] = useState('Home');
+  const [toast, setToast] = useState({ visible: false, message: '' });
+
+
+
+  // ANIMATION VARIANTS
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
+  // Mobile Nav Items (duplicated logic from Sidebar for mobile bottom bar)
+  const navItems = [
+    { id: 'Home', icon: Home, label: 'Home' },
+    { id: 'Detections', icon: Activity, label: 'Detections' },
+    { id: 'Reports', icon: FileText, label: 'Reports' },
+    { id: 'Profile', icon: User, label: 'Profile' },
+  ];
+
   return (
-    <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-800">
-      {/* SIDEBAR */}
-      <nav className="w-64 bg-white border-r border-slate-200 flex flex-col p-6">
-        <div className="flex items-center gap-3 mb-10 text-blue-600">
-          <Brain size={32} />
+    <div className="flex flex-col md:flex-row h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
+
+      <Toast
+        isVisible={toast.visible}
+        message={toast.message}
+        onClose={() => setToast({ ...toast, visible: false })}
+      />
+
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      {/* MOBILE HEADER */}
+      <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+        <div className="flex items-center gap-2 text-indigo-600">
+          <Brain size={26} className="text-indigo-600" />
           <h1 className="text-xl font-bold tracking-tight text-slate-900">StimTrack</h1>
         </div>
-        
-        <div className="space-y-2">
-          {['Home', 'Detections', 'Reports', 'Settings'].map((item) => (
-            <div key={item} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors ${item === 'Detections' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-500 hover:bg-slate-50'}`}>
-              {item === 'Home' && <Activity size={20} />}
-              {item === 'Detections' && <ShieldCheck size={20} />}
-              {item === 'Reports' && <Calendar size={20} />}
-              {item === 'Settings' && <Settings size={20} />}
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
-      </nav>
+        <button className="p-2 -mr-2 text-slate-500 active:bg-slate-100 rounded-full">
+          <Settings size={22} />
+        </button>
+      </div>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex overflow-hidden">
-        
-        {/* LOG FEED */}
-        <div className="w-96 border-r border-slate-200 bg-white flex flex-col">
-          <div className="p-6 border-b border-slate-100">
-            <h2 className="text-xl font-bold">Stimming Logs</h2>
-            <p className="text-sm text-slate-400">Live AI Detection Feed</p>
-          </div>
-          
-          <div className="overflow-y-auto flex-1 p-4 space-y-4">
-            {mockLogs.map((log) => (
-              <div 
-                key={log.id} 
-                onClick={() => setSelectedLog(log)}
-                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedLog?.id === log.id ? 'border-blue-500 bg-blue-50 shadow-md translate-x-1' : 'border-slate-100 hover:border-slate-300'}`}
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{log.time} • {log.date}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${log.emotion === 'Happy' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                    {log.emotion}
-                  </span>
-                </div>
-                <h3 className="font-bold text-slate-800 text-lg">{log.type}</h3>
+      <main className="flex-1 relative overflow-hidden flex flex-col md:flex-row">
+
+        {/* LOG FEED / CONTENT AREA */}
+        <div className="flex-1 flex flex-col relative h-full overflow-hidden">
+          {/* MOBILE TAB BAR SPACER */}
+          <div className="md:hidden absolute bottom-0 w-full h-20 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-10" />
+
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 scroll-smooth">
+            <header className="mb-8 md:mb-10 px-2 flex justify-between items-end">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-2">
+                  {activeTab === 'Home' ? 'Hello, John 👋' : activeTab}
+                </h2>
+                {activeTab === 'Home' && <p className="text-slate-500 font-medium">Here's today's activity summary.</p>}
+                {activeTab === 'Profile' && <p className="text-slate-500 font-medium">Manage child and caregiver profile.</p>}
               </div>
-            ))}
+            </header>
+
+            <AnimatePresence mode="wait">
+              {activeTab === 'Home' && (
+                <HomeTab
+                  logs={logs}
+                  selectedLogId={selectedLog?.id}
+                  onLogClick={setSelectedLog}
+                  containerVariants={containerVariants}
+                  itemVariants={itemVariants}
+                />
+              )}
+
+              {activeTab === 'Profile' && (
+                <ProfileTab />
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* DETAIL VIEW */}
-        <div className="flex-1 p-10 bg-slate-50 overflow-y-auto">
-          {selectedLog ? (
-            <div className="max-w-4xl mx-auto space-y-8">
-              <header className="flex justify-between items-end">
-                <div>
-                  <h2 className="text-3xl font-black text-slate-900">{selectedLog.type}</h2>
-                  <p className="text-slate-500 flex items-center gap-2 mt-1">
-                    <Clock size={16} /> Detected at {selectedLog.time} on {selectedLog.date}
-                  </p>
-                </div>
-                {/* FUTURE INTEGRATION: Add a button to delete or export specific logs */}
-                <button className="bg-white border border-slate-200 px-6 py-2 rounded-full font-bold shadow-sm hover:bg-slate-100 transition-all">Export Log</button>
-              </header>
+        {/* DETAIL VIEW & BACKDROP */}
+        <AnimatePresence>
+          {selectedLog && (
+            <>
+              {/* BACKDROP FOR DESKTOP */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSelectedLog(null)}
+                className="hidden lg:block absolute inset-0 bg-slate-900/20 backdrop-blur-sm z-30"
+              />
 
-              <div className="grid grid-cols-3 gap-8">
-                {/* SCREENSHOT CARD */}
-                <div className="col-span-2 bg-white p-2 rounded-[2rem] shadow-xl border border-slate-100">
-                  <div className="aspect-video rounded-[1.5rem] overflow-hidden bg-slate-200 relative">
-                    {/* FUTURE INTEGRATION: Use actual URL from backend (e.g., http://localhost:3000/${log.imageUrl}) */}
-                    <img src={selectedLog.image} alt="Detection" className="w-full h-full object-cover" />
-                    <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white px-4 py-1 rounded-full text-xs font-bold">
-                      Confidence: {(selectedLog.confidence * 100).toFixed(0)}%
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI METRICS SIDEBAR */}
-                <div className="space-y-6">
-                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase mb-4">Detected Emotion</h4>
-                    <div className="flex items-center gap-4">
-                      {selectedLog.emotion === 'Happy' ? <Smile size={40} className="text-green-500" /> : <Frown size={40} className="text-orange-500" />}
-                      <span className="text-2xl font-bold">{selectedLog.emotion}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Observation Notes</h4>
-                    <p className="text-slate-600 text-sm leading-relaxed">{selectedLog.details}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center text-slate-300">
-              <Activity size={80} strokeWidth={1} />
-              <p className="mt-4 font-medium">Select an activity log to view the AI analysis</p>
-            </div>
+              <DetailView
+                log={selectedLog}
+                onClose={() => setSelectedLog(null)}
+              />
+            </>
           )}
-        </div>
+        </AnimatePresence>
       </main>
+
+      {/* MOBILE BOTTOM NAVIGATION */}
+      <nav className="md:hidden fixed bottom-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-200/60 pb-safe pt-2 px-6 z-50 flex justify-between items-center shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.05)]">
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => {
+              setActiveTab(item.id);
+              setSelectedLog(null); // Reset detail view on tab switch
+            }}
+            className="flex flex-col items-center gap-1 p-3 relative group"
+          >
+            <div className={`
+               p-1.5 rounded-xl transition-all duration-300
+               ${activeTab === item.id ? 'bg-indigo-100 text-indigo-600 -translate-y-1' : 'text-slate-400 group-hover:text-indigo-500'}
+            `}>
+              <item.icon size={24} className={activeTab === item.id ? 'stroke-[2.5px]' : 'stroke-2'} />
+            </div>
+            {activeTab === item.id && (
+              <motion.span
+                layoutId="nav-dot"
+                className="absolute -bottom-1 w-1 h-1 bg-indigo-600 rounded-full"
+              />
+            )}
+          </button>
+        ))}
+      </nav>
     </div>
   );
 };
