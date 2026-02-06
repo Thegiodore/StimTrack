@@ -9,7 +9,7 @@ const SplashScreen = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors duration-300"
         >
             <div className="flex items-center">
                 {/* LOGO - Pops first in center */}
@@ -21,7 +21,7 @@ const SplashScreen = () => {
                         ease: "easeInOut",
                         times: [0, 0.6, 1]
                     }}
-                    className="text-indigo-600 p-3 md:p-4 bg-indigo-50 rounded-3xl z-10 relative"
+                    className="text-indigo-600 dark:text-indigo-400 p-3 md:p-4 bg-indigo-50 dark:bg-slate-900 rounded-3xl z-10 relative shadow-xl dark:shadow-indigo-900/20"
                 >
                     <Brain className="w-12 h-12 md:w-16 md:h-16" strokeWidth={2.5} />
                 </motion.div>
@@ -37,7 +37,7 @@ const SplashScreen = () => {
                     }}
                     className="overflow-hidden flex items-center"
                 >
-                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight whitespace-nowrap pl-3 md:pl-5">
+                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight whitespace-nowrap pl-3 md:pl-5">
                         StimTrack
                     </h1>
                 </motion.div>
