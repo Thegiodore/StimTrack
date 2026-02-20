@@ -1,16 +1,19 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Register() {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     username: "",
     email: "",
-    password: ""
+    password: "",
   });
 
   const handleChange = (e) => {
     setForm({
       ...form,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -18,20 +21,27 @@ export default function Register() {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5000/api/register", {
+      const res = await fetch("/api/Register", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(form)
+        credentials: "include", // important for sessions
+        body: JSON.stringify(form),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       console.log(data);
-      alert("Registered successfully!");
+
+      if (res.ok) {
+        alert("Registered successfully!");
+        navigate("/login"); // go back to login after register
+      } else {
+        alert(data.message || "Register failed");
+      }
     } catch (err) {
       console.error(err);
-      alert("Error registering");
+      alert("Server error");
     }
   };
 
@@ -43,6 +53,7 @@ export default function Register() {
         <input
           name="username"
           placeholder="Username"
+          value={form.username}
           onChange={handleChange}
           required
         />
@@ -52,6 +63,7 @@ export default function Register() {
           name="email"
           type="email"
           placeholder="Email"
+          value={form.email}
           onChange={handleChange}
           required
         />
@@ -61,6 +73,7 @@ export default function Register() {
           name="password"
           type="password"
           placeholder="Password"
+          value={form.password}
           onChange={handleChange}
           required
         />
@@ -70,7 +83,7 @@ export default function Register() {
       </form>
 
       <p style={{ marginTop: 20 }}>
-        Already have an account? <a href="/login">Sign in</a>
+        Already have an account? <Link to="/Login">Sign in</Link>
       </p>
     </div>
   );

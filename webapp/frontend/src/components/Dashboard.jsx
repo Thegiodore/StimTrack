@@ -12,6 +12,10 @@ import ProfileTab from './ProfileTab';
 import DetailView from './DetailView';
 import Toast from './Toast';
 
+import { useNavigate } from "react-router-dom";
+
+import { useEffect } from "react";
+
 const Dashboard = () => {
   // MOCK INITIAL DATA
   const initialLogs = [
@@ -52,8 +56,39 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('Home');
   const [toast, setToast] = useState({ visible: false, message: '' });
 
+  const navigate = useNavigate();
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      navigate("/login");
+    }
+  };
 
+  useEffect(() => {
+  const checkAuth = async () => {
+    try {
+      const res = await fetch("/api/auth/status", {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        navigate("/login");
+      }
+    } catch (err) {
+      navigate("/login");
+    }
+  };
+
+  checkAuth();
+}, [navigate]);
+  
   // ANIMATION VARIANTS
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -95,10 +130,19 @@ const Dashboard = () => {
           <Brain size={26} className="text-indigo-600 dark:text-indigo-400" />
           <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">StimTrack</h1>
         </div>
-        <button className="p-2 -mr-2 text-slate-500 dark:text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 rounded-full transition-colors">
-          <Settings size={22} />
-        </button>
+        <div className="flex items-center gap-2">
+      <button
+        onClick={handleLogout}
+        className="px-3 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+  >
+        Logout
+      </button>
+
+      <button className="p-2 -mr-2 text-slate-500 dark:text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 rounded-full transition-colors">
+        <Settings size={22} />
+      </button>
       </div>
+    </div>
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 relative overflow-hidden flex flex-col md:flex-row">

@@ -20,27 +20,33 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      const res = await fetch("/api/login", {
+      const res = await fetch("/api/Login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
+        credentials: "include",
         body: JSON.stringify(form)
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       console.log(data);
 
       if (res.ok) {
         alert("Login successful!");
 
-        // Optional: save token
-        // localStorage.setItem("token", data.token);
+        const user = data.user;
 
-        navigate("/dashboard"); // redirect after login
+        if (user.role === "admin") {
+          navigate("/Admin");
+        } else {
+          navigate("/Dashboard");
+        }
+
       } else {
         alert(data.message || "Login failed");
       }
+
     } catch (err) {
       console.error(err);
       alert("Server error");
@@ -56,6 +62,7 @@ export default function Login() {
           name="email"
           type="email"
           placeholder="Email"
+          value={form.email}
           onChange={handleChange}
           required
         />
@@ -65,6 +72,7 @@ export default function Login() {
           name="password"
           type="password"
           placeholder="Password"
+          value={form.password}
           onChange={handleChange}
           required
         />
@@ -74,7 +82,7 @@ export default function Login() {
       </form>
 
       <p style={{ marginTop: 20 }}>
-        Don't have an account yet? <Link to="/register">Register</Link>
+        Don't have an account yet? <Link to="/Register">Register</Link>
       </p>
     </div>
   );
