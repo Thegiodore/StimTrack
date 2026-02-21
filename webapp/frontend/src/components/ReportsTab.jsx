@@ -11,7 +11,7 @@ const TYPE_FILTERS = [
     { id: "all", label: "All" },
     { id: "Head Banging", label: "Head Banging" },
     { id: "Arm Flapping", label: "Arm Flapping" },
-    { id: "Spinning", label: "Spinning" },
+    { id: "Pacing", label: "Pacing" },
 ];
 
 const EMOTION_FILTERS = [

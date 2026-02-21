@@ -15,7 +15,7 @@ import { useTheme } from "../context/ThemeContext";
 
 // ── Sample data generator (replace with real backend data later) ──
 function generateSampleData() {
-    const types = ["Head Banging", "Arm Flapping", "Spinning"];
+    const types = ["Head Banging", "Arm Flapping", "Pacing"];
     const data = [];
     const now = new Date();
 
@@ -28,7 +28,7 @@ function generateSampleData() {
             date: dateStr,
             "Head Banging": Math.floor(Math.random() * 8) + (i % 7 === 0 ? 3 : 0),
             "Arm Flapping": Math.floor(Math.random() * 12) + 1,
-            Spinning: Math.floor(Math.random() * 6),
+            Pacing: Math.floor(Math.random() * 6),
         });
     }
     return data;
@@ -45,7 +45,7 @@ const RANGES = [
 const LINES = [
     { key: "Head Banging", color: "#ef4444", darkColor: "#f87171" },
     { key: "Arm Flapping", color: "#f59e0b", darkColor: "#fbbf24" },
-    { key: "Spinning", color: "#6366f1", darkColor: "#818cf8" },
+    { key: "Pacing", color: "#6366f1", darkColor: "#818cf8" },
 ];
 
 // ── Custom Tooltip ──
@@ -97,13 +97,13 @@ export default function DetectionsTab({ logs, childName = "Child" }) {
                 .toISOString()
                 .split("T")[0];
             if (!byDate[dateStr]) {
-                byDate[dateStr] = { date: dateStr, "Head Banging": 0, "Arm Flapping": 0, Spinning: 0 };
+                byDate[dateStr] = { date: dateStr, "Head Banging": 0, "Arm Flapping": 0, Pacing: 0 };
             }
             const type = log.stim_type || log.type || "";
             if (type.toLowerCase().includes("head")) byDate[dateStr]["Head Banging"]++;
             else if (type.toLowerCase().includes("flap") || type.toLowerCase().includes("arm"))
                 byDate[dateStr]["Arm Flapping"]++;
-            else if (type.toLowerCase().includes("spin")) byDate[dateStr]["Spinning"]++;
+            else if (type.toLowerCase().includes("pace")) byDate[dateStr]["Pacing"]++;
         });
 
         return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
