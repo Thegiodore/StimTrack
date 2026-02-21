@@ -179,7 +179,7 @@ const Dashboard = () => {
                 />
               )}
 
-              {activeTab === "Profile" && <ProfileTab />}
+              {activeTab === "Profile" && <ProfileTab me={me} />}
             </AnimatePresence>
           </div>
         </div>
