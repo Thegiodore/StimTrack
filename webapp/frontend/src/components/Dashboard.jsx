@@ -7,6 +7,8 @@ import { useTheme } from "../context/ThemeContext";
 import Sidebar from "./Sidebar";
 import HomeTab from "./HomeTab";
 import ProfileTab from "./ProfileTab";
+import DetectionsTab from "./DetectionsTab";
+import ReportsTab from "./ReportsTab";
 import DetailView from "./DetailView";
 import Toast from "./Toast";
 
@@ -195,6 +197,16 @@ const Dashboard = () => {
                     Here's today's activity summary.
                   </p>
                 )}
+                {activeTab === "Detections" && (
+                  <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors">
+                    Track stimming patterns and frequency.
+                  </p>
+                )}
+                {activeTab === "Reports" && (
+                  <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors">
+                    Detailed log of all detections.
+                  </p>
+                )}
                 {activeTab === "Profile" && (
                   <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors">
                     Manage child and caregiver profile.
@@ -213,6 +225,10 @@ const Dashboard = () => {
                   itemVariants={itemVariants}
                 />
               )}
+
+              {activeTab === "Detections" && <DetectionsTab logs={logs} />}
+
+              {activeTab === "Reports" && <ReportsTab logs={logs} />}
 
               {activeTab === "Profile" && <ProfileTab me={me} />}
             </AnimatePresence>
