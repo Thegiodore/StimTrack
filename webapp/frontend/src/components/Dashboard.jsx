@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Activity, Home, FileText, User } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Brain, Settings } from "lucide-react";
+import { Brain, Sun, Moon, LogOut } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 import Sidebar from "./Sidebar";
 import HomeTab from "./HomeTab";
@@ -12,6 +13,7 @@ import Toast from "./Toast";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const { theme, toggleTheme } = useTheme();
   const [me, setMe] = useState(null);
 
   // ✅ logs now come from backend (per-user)
@@ -20,6 +22,7 @@ const Dashboard = () => {
   const [selectedLog, setSelectedLog] = useState(null);
   const [activeTab, setActiveTab] = useState("Home");
   const [toast, setToast] = useState({ visible: false, message: "" });
+  const [logoutExpanded, setLogoutExpanded] = useState(false);
 
   const navigate = useNavigate();
 
@@ -104,30 +107,62 @@ const Dashboard = () => {
       />
 
       <Sidebar activeTab={activeTab}
-      setActiveTab={setActiveTab}
-      onLogout={handleLogout}
+        setActiveTab={setActiveTab}
+        onLogout={handleLogout}
       />
 
       {/* MOBILE HEADER */}
-      <div className="md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-30 transition-colors duration-300">
-        <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-          <Brain size={26} className="text-indigo-600 dark:text-indigo-400" />
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-            StimTrack
-          </h1>
-        </div>
+      <div className="md:hidden sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800 transition-colors duration-300">
+        <div className="px-5 sm:px-6 py-5 flex items-center justify-between">
+          {/* Left: Branding */}
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-50 dark:bg-slate-800 rounded-xl text-indigo-600 dark:text-indigo-400 transition-colors duration-300">
+              <Brain size={24} />
+            </div>
+            <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white transition-colors duration-300">
+              StimTrack
+            </h1>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleLogout}
-            className="px-3 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
-          >
-            Logout
-          </button>
+          {/* Right: Dark Mode + Logout */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-300"
+              aria-label="Toggle theme"
+            >
+              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
 
-          <button className="p-2 -mr-2 text-slate-500 dark:text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 rounded-full transition-colors">
-            <Settings size={22} />
-          </button>
+            <motion.button
+              layout
+              onClick={() => {
+                if (logoutExpanded) {
+                  handleLogout();
+                } else {
+                  setLogoutExpanded(true);
+                  setTimeout(() => setLogoutExpanded(false), 3000);
+                }
+              }}
+              className="flex items-center px-2.5 py-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400 font-semibold text-sm hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors duration-300 overflow-hidden"
+              transition={{ layout: { duration: 0.25, ease: "easeInOut" } }}
+            >
+              <motion.span layout="position"><LogOut size={16} className="shrink-0" /></motion.span>
+              <AnimatePresence>
+                {logoutExpanded && (
+                  <motion.span
+                    initial={{ width: 0, opacity: 0, paddingLeft: 0 }}
+                    animate={{ width: "auto", opacity: 1, paddingLeft: 8 }}
+                    exit={{ width: 0, opacity: 0, paddingLeft: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="whitespace-nowrap overflow-hidden"
+                  >
+                    Logout
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
         </div>
       </div>
 
@@ -220,10 +255,9 @@ const Dashboard = () => {
             <div
               className={`
                 p-1.5 rounded-xl transition-all duration-300
-                ${
-                  activeTab === item.id
-                    ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 -translate-y-1"
-                    : "text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400"
+                ${activeTab === item.id
+                  ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 -translate-y-1"
+                  : "text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400"
                 }
               `}
             >

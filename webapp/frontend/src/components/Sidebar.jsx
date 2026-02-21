@@ -50,20 +50,10 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
             <span className="hidden lg:block font-semibold">{item.label}</span>
           </button>
         ))}
-
-        {/* ✅ LOGOUT BUTTON (under Profile) */}
-        <button
-          onClick={onLogout}
-          className="flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 group
-            text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-800 hover:text-red-600 justify-center lg:justify-start"
-        >
-          <LogOut size={22} className="shrink-0 stroke-2" />
-          <span className="hidden lg:block font-semibold">Logout</span>
-        </button>
       </div>
 
-      {/* FOOTER */}
-      <div className="mt-auto flex flex-col gap-4">
+      {/* FOOTER: Dark Mode + Logout */}
+      <div className="mt-auto flex flex-col gap-2">
         <button
           onClick={toggleTheme}
           className="flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 group
@@ -77,6 +67,15 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
           <span className="hidden lg:block font-semibold">
             {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
           </span>
+        </button>
+
+        <button
+          onClick={onLogout}
+          className="flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 group
+            text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-800 hover:text-red-600 justify-center lg:justify-start"
+        >
+          <LogOut size={22} className="shrink-0 stroke-2" />
+          <span className="hidden lg:block font-semibold">Logout</span>
         </button>
       </div>
     </aside>
