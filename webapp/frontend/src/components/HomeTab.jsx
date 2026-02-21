@@ -35,7 +35,7 @@ const HomeTab = ({ logs, selectedLogId, onLogClick, containerVariants, itemVaria
               ${log.emotion === 'Happy'
                                 ? 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border-green-100 dark:border-green-500/20'
                                 : 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/20'}`}>
-                            {(log.confidence * 100).toFixed(0)}% Conf
+                            {(log.confidence * 100).toFixed(0)}% Acc
                         </div>
                     </div>
 

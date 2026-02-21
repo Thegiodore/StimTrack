@@ -5,14 +5,10 @@ import {
   Home,
   FileText,
   Brain,
-  Sun,
-  Moon,
   LogOut
 } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 
 const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
-  const { theme, toggleTheme } = useTheme();
 
   const navItems = [
     { id: 'Home', icon: Home, label: 'Home' },
@@ -52,23 +48,8 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
         ))}
       </div>
 
-      {/* FOOTER: Dark Mode + Logout */}
+      {/* FOOTER: Logout */}
       <div className="mt-auto flex flex-col gap-2">
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 group
-            text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-amber-500 dark:hover:text-amber-400 justify-center lg:justify-start"
-        >
-          {theme === 'light' ? (
-            <Moon size={22} className="shrink-0 stroke-2" />
-          ) : (
-            <Sun size={22} className="shrink-0 stroke-2" />
-          )}
-          <span className="hidden lg:block font-semibold">
-            {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-          </span>
-        </button>
-
         <button
           onClick={onLogout}
           className="flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 group

@@ -23,6 +23,11 @@ const Dashboard = () => {
 
   const [selectedLog, setSelectedLog] = useState(null);
   const [activeTab, setActiveTab] = useState("Home");
+
+  // Close detail view when switching tabs
+  useEffect(() => {
+    setSelectedLog(null);
+  }, [activeTab]);
   const [toast, setToast] = useState({ visible: false, message: "" });
   const [logoutExpanded, setLogoutExpanded] = useState(false);
 
@@ -176,7 +181,7 @@ const Dashboard = () => {
           <div className="md:hidden absolute bottom-0 w-full h-20 bg-gradient-to-t from-white via-white/80 to-transparent dark:from-slate-950 dark:via-slate-950/80 pointer-events-none z-10 transition-colors duration-300" />
 
           <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 scroll-smooth">
-            <header className="mb-8 md:mb-10 px-2 flex justify-between items-end">
+            <header className="mb-8 md:mb-10 px-2 flex justify-between items-start">
               <div>
                 <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-2 transition-colors duration-300">
                   {activeTab === "Home"
@@ -213,6 +218,36 @@ const Dashboard = () => {
                   </p>
                 )}
               </div>
+
+              {/* Dark Mode Slide Toggle — desktop only */}
+              <button
+                onClick={toggleTheme}
+                className="hidden md:block relative w-16 h-8 rounded-full p-0.5 transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:ring-offset-2 dark:focus:ring-offset-slate-900 shrink-0"
+                style={{
+                  backgroundColor: theme === 'dark' ? '#312e81' : '#e2e8f0'
+                }}
+                aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              >
+                {/* Track icons */}
+                <Sun size={14} className={`absolute left-1.5 top-1/2 -translate-y-1/2 transition-opacity duration-300 ${theme === 'light' ? 'opacity-50 text-amber-500' : 'opacity-0'}`} />
+                <Moon size={14} className={`absolute right-1.5 top-1/2 -translate-y-1/2 transition-opacity duration-300 ${theme === 'dark' ? 'opacity-50 text-indigo-300' : 'opacity-0'}`} />
+
+                {/* Sliding knob */}
+                <motion.div
+                  layout
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  className={`w-7 h-7 rounded-full shadow-md flex items-center justify-center ${theme === 'dark'
+                    ? 'bg-indigo-500 ml-auto'
+                    : 'bg-white ml-0'
+                    }`}
+                >
+                  {theme === 'light' ? (
+                    <Sun size={16} className="text-amber-500" />
+                  ) : (
+                    <Moon size={16} className="text-white" />
+                  )}
+                </motion.div>
+              </button>
             </header>
 
             <AnimatePresence mode="wait">

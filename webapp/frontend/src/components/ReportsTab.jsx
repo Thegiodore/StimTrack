@@ -205,7 +205,7 @@ export default function ReportsTab({ logs }) {
 
         autoTable(doc, {
             startY: 46,
-            head: [["Timestamp", "Stim Type", "Emotion", "Confidence", "Details"]],
+            head: [["Timestamp", "Stim Type", "Emotion", "Accuracy", "Details"]],
             body: tableData,
             margin: { left: marginLeft, right: marginRight },
             styles: {
@@ -263,7 +263,7 @@ export default function ReportsTab({ logs }) {
         { key: "time", label: "Timestamp", sortable: true },
         { key: "type", label: "Stim Type", sortable: false },
         { key: "emotion", label: "Emotion", sortable: false },
-        { key: "confidence", label: "Confidence", sortable: true },
+        { key: "confidence", label: "Accuracy", sortable: true },
         { key: "details", label: "Details", sortable: false },
     ];
 
