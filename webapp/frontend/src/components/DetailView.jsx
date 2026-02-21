@@ -4,7 +4,7 @@ import {
     Smile, Frown, Activity, FileText, ArrowLeft, ShieldCheck
 } from 'lucide-react';
 
-const DetailView = ({ log, onClose }) => {
+const DetailView = ({ log, onClose, childName = "Child" }) => {
     if (!log) return null;
 
     return (
@@ -35,7 +35,10 @@ const DetailView = ({ log, onClose }) => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 pb-24 md:pb-8">
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 pb-24 md:pb-8">
+                <h2 className="text-2xl font-black text-slate-800 dark:text-white">
+                    {childName}
+                </h2>
                 <motion.div
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}

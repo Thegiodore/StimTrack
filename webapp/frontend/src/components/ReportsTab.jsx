@@ -28,7 +28,7 @@ const DATE_RANGES = [
     { id: "custom", label: "Custom" },
 ];
 
-export default function ReportsTab({ logs }) {
+export default function ReportsTab({ logs, childName = "Child" }) {
     const { theme } = useTheme();
     const [search, setSearch] = useState("");
     const [sortKey, setSortKey] = useState("time");
@@ -174,7 +174,7 @@ export default function ReportsTab({ logs }) {
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100);
-        doc.text("Stimming Activity Report", marginLeft, 27);
+        doc.text(`${childName}'s Stimming Activity Report`, marginLeft, 27);
 
         doc.setFontSize(9);
         doc.text(
@@ -286,7 +286,7 @@ export default function ReportsTab({ logs }) {
                         </div>
                         <div>
                             <h3 className="font-bold text-slate-900 dark:text-white transition-colors">
-                                Activity Log
+                                {childName}'s Activity Log
                             </h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                                 {filteredLogs.length} {filteredLogs.length === 1 ? "entry" : "entries"}

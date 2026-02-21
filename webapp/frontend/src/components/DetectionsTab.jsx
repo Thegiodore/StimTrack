@@ -80,7 +80,7 @@ function ChartTooltip({ active, payload, label }) {
     );
 }
 
-export default function DetectionsTab({ logs }) {
+export default function DetectionsTab({ logs, childName = "Child" }) {
     const { theme } = useTheme();
     const isDark = theme === "dark";
 
@@ -152,7 +152,7 @@ export default function DetectionsTab({ logs }) {
                         </div>
                         <div>
                             <h3 className="font-bold text-slate-900 dark:text-white transition-colors">
-                                Stimming Activity
+                                {childName}'s Stimming Activity
                             </h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                                 Frequency over time

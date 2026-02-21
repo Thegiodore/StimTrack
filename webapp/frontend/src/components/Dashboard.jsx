@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 const Dashboard = () => {
   const { theme, toggleTheme } = useTheme();
   const [me, setMe] = useState(null);
+  const [childName, setChildName] = useState("Child");
 
   // ✅ logs now come from backend (per-user)
   const [logs, setLogs] = useState([]);
@@ -75,6 +76,15 @@ const Dashboard = () => {
 
         const logsData = await logsRes.json().catch(() => null);
         setLogs(logsData?.logs || []);
+
+        // 3) load child profile
+        const profileRes = await fetch("/api/Profile", {
+          credentials: "include",
+        });
+        const profileData = await profileRes.json().catch(() => null);
+        if (profileData?.profile?.child?.name) {
+          setChildName(profileData.profile.child.name);
+        }
       } catch (err) {
         navigate("/Login");
       }
@@ -261,9 +271,9 @@ const Dashboard = () => {
                 />
               )}
 
-              {activeTab === "Detections" && <DetectionsTab logs={logs} />}
+              {activeTab === "Detections" && <DetectionsTab logs={logs} childName={childName} />}
 
-              {activeTab === "Reports" && <ReportsTab logs={logs} />}
+              {activeTab === "Reports" && <ReportsTab logs={logs} childName={childName} />}
 
               {activeTab === "Profile" && <ProfileTab me={me} />}
             </AnimatePresence>
@@ -286,6 +296,7 @@ const Dashboard = () => {
               <DetailView
                 log={selectedLog}
                 onClose={() => setSelectedLog(null)}
+                childName={childName}
               />
             </>
           )}
