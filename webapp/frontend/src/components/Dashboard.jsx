@@ -1,152 +1,138 @@
-import React, { useState } from 'react';
-import {
-  Activity, Home, FileText, User // Icons used in Mobile Nav
-} from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Brain, Settings } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Activity, Home, FileText, User } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Brain, Settings } from "lucide-react";
 
-// Import New Components
-import Sidebar from './Sidebar';
-import HomeTab from './HomeTab';
-import ProfileTab from './ProfileTab';
-import DetailView from './DetailView';
-import Toast from './Toast';
+import Sidebar from "./Sidebar";
+import HomeTab from "./HomeTab";
+import ProfileTab from "./ProfileTab";
+import DetailView from "./DetailView";
+import Toast from "./Toast";
 
 import { useNavigate } from "react-router-dom";
 
-import { useEffect } from "react";
-
 const Dashboard = () => {
-  // MOCK INITIAL DATA
-  const initialLogs = [
-    {
-      id: 1,
-      time: '14:08',
-      date: 'Feb 3, 2026',
-      type: 'Hand Flapping',
-      emotion: 'Happy',
-      confidence: 0.94,
-      image: 'https://images.unsplash.com/photo-1620121692029-d088224efc74?q=80&w=400',
-      details: 'Repetitive hand movement detected for 15 seconds.'
-    },
-    {
-      id: 2,
-      time: '09:16',
-      date: 'Feb 3, 2026',
-      type: 'Rocking',
-      emotion: 'Anxious',
-      confidence: 0.88,
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=400',
-      details: 'Rhythmic swaying detected while sitting near the window.'
-    },
-    {
-      id: 3,
-      time: '08:45',
-      date: 'Feb 3, 2026',
-      type: 'Pacing',
-      emotion: 'Neutral',
-      confidence: 0.92,
-      image: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=400',
-      details: 'Continuous walking back and forth in the living room.'
-    }
-  ];
+  const [me, setMe] = useState(null);
 
-  const [logs, setLogs] = useState(initialLogs);
+  // ✅ logs now come from backend (per-user)
+  const [logs, setLogs] = useState([]);
+
   const [selectedLog, setSelectedLog] = useState(null);
-  const [activeTab, setActiveTab] = useState('Home');
-  const [toast, setToast] = useState({ visible: false, message: '' });
+  const [activeTab, setActiveTab] = useState("Home");
+  const [toast, setToast] = useState({ visible: false, message: "" });
 
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/logout", {
+      await fetch("/api/Logout", {
         method: "POST",
         credentials: "include",
       });
     } catch (err) {
       console.error(err);
     } finally {
-      navigate("/login");
+      navigate("/Login");
     }
   };
 
+  // ✅ Auth check + load user info + load per-user logs
   useEffect(() => {
-  const checkAuth = async () => {
-    try {
-      const res = await fetch("/api/auth/status", {
-        credentials: "include",
-      });
+    const init = async () => {
+      try {
+        // 1) check auth + get user
+        const res = await fetch("/api/auth/status", {
+          credentials: "include",
+        });
 
-      if (!res.ok) {
-        navigate("/login");
+        if (!res.ok) {
+          navigate("/Login");
+          return;
+        }
+
+        const data = await res.json().catch(() => null);
+        if (!data?.authenticated) {
+          navigate("/Login");
+          return;
+        }
+
+        setMe(data.user);
+
+        // 2) load logs for this user (seeded with mock AI logs on backend)
+        const logsRes = await fetch("/api/Logs", {
+          credentials: "include",
+        });
+
+        const logsData = await logsRes.json().catch(() => null);
+        setLogs(logsData?.logs || []);
+      } catch (err) {
+        navigate("/Login");
       }
-    } catch (err) {
-      navigate("/login");
-    }
-  };
+    };
 
-  checkAuth();
-}, [navigate]);
-  
+    init();
+  }, [navigate]);
+
   // ANIMATION VARIANTS
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
+      transition: { staggerChildren: 0.1 },
+    },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
+    show: { opacity: 1, y: 0 },
   };
 
-  // Mobile Nav Items (duplicated logic from Sidebar for mobile bottom bar)
+  // Mobile Nav Items
   const navItems = [
-    { id: 'Home', icon: Home, label: 'Home' },
-    { id: 'Detections', icon: Activity, label: 'Detections' },
-    { id: 'Reports', icon: FileText, label: 'Reports' },
-    { id: 'Profile', icon: User, label: 'Profile' },
+    { id: "Home", icon: Home, label: "Home" },
+    { id: "Detections", icon: Activity, label: "Detections" },
+    { id: "Reports", icon: FileText, label: "Reports" },
+    { id: "Profile", icon: User, label: "Profile" },
   ];
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-200 overflow-hidden transition-colors duration-300">
-
       <Toast
         isVisible={toast.visible}
         message={toast.message}
         onClose={() => setToast({ ...toast, visible: false })}
       />
 
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      onLogout={handleLogout}
+      />
 
       {/* MOBILE HEADER */}
       <div className="md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-30 transition-colors duration-300">
         <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
           <Brain size={26} className="text-indigo-600 dark:text-indigo-400" />
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">StimTrack</h1>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            StimTrack
+          </h1>
         </div>
-        <div className="flex items-center gap-2">
-      <button
-        onClick={handleLogout}
-        className="px-3 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
-  >
-        Logout
-      </button>
 
-      <button className="p-2 -mr-2 text-slate-500 dark:text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 rounded-full transition-colors">
-        <Settings size={22} />
-      </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleLogout}
+            className="px-3 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+          >
+            Logout
+          </button>
+
+          <button className="p-2 -mr-2 text-slate-500 dark:text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 rounded-full transition-colors">
+            <Settings size={22} />
+          </button>
+        </div>
       </div>
-    </div>
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 relative overflow-hidden flex flex-col md:flex-row">
-
         {/* LOG FEED / CONTENT AREA */}
         <div className="flex-1 flex flex-col relative h-full overflow-hidden">
           {/* MOBILE TAB BAR SPACER */}
@@ -156,15 +142,34 @@ const Dashboard = () => {
             <header className="mb-8 md:mb-10 px-2 flex justify-between items-end">
               <div>
                 <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-2 transition-colors duration-300">
-                  {activeTab === 'Home' ? 'Hello, John 👋' : activeTab}
+                  {activeTab === "Home"
+                    ? `Hello, ${me?.username || "User"} 👋`
+                    : activeTab}
                 </h2>
-                {activeTab === 'Home' && <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors">Here's today's activity summary.</p>}
-                {activeTab === 'Profile' && <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors">Manage child and caregiver profile.</p>}
+
+                {/* ✅ Sub heading: Unique ID under username (only on Home) */}
+                {activeTab === "Home" && me?.id && (
+                  <p className="text-sm text-slate-500 dark:text-slate-400 font-medium transition-colors">
+                    ID: {me.id}
+                  </p>
+                )}
+
+                {/* Keep existing captions */}
+                {activeTab === "Home" && (
+                  <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors">
+                    Here's today's activity summary.
+                  </p>
+                )}
+                {activeTab === "Profile" && (
+                  <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors">
+                    Manage child and caregiver profile.
+                  </p>
+                )}
               </div>
             </header>
 
             <AnimatePresence mode="wait">
-              {activeTab === 'Home' && (
+              {activeTab === "Home" && (
                 <HomeTab
                   logs={logs}
                   selectedLogId={selectedLog?.id}
@@ -174,9 +179,7 @@ const Dashboard = () => {
                 />
               )}
 
-              {activeTab === 'Profile' && (
-                <ProfileTab />
-              )}
+              {activeTab === "Profile" && <ProfileTab />}
             </AnimatePresence>
           </div>
         </div>
@@ -210,16 +213,26 @@ const Dashboard = () => {
             key={item.id}
             onClick={() => {
               setActiveTab(item.id);
-              setSelectedLog(null); // Reset detail view on tab switch
+              setSelectedLog(null);
             }}
             className="flex flex-col items-center gap-1 p-3 relative group"
           >
-            <div className={`
-               p-1.5 rounded-xl transition-all duration-300
-               ${activeTab === item.id ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 -translate-y-1' : 'text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400'}
-            `}>
-              <item.icon size={24} className={activeTab === item.id ? 'stroke-[2.5px]' : 'stroke-2'} />
+            <div
+              className={`
+                p-1.5 rounded-xl transition-all duration-300
+                ${
+                  activeTab === item.id
+                    ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 -translate-y-1"
+                    : "text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400"
+                }
+              `}
+            >
+              <item.icon
+                size={24}
+                className={activeTab === item.id ? "stroke-[2.5px]" : "stroke-2"}
+              />
             </div>
+
             {activeTab === item.id && (
               <motion.span
                 layoutId="nav-dot"
