@@ -54,6 +54,7 @@ const users = [
     email: "admin@stimtrack.local",
     passwordHash: bcrypt.hashSync("Admin123!", 10), // hashed
     role: "admin",
+    profile: { child: null, caregiverRole: "Parent" },
   },
 ];
 
@@ -150,6 +151,7 @@ app.post("/api/Register", async (req, res) => {
     email,
     passwordHash,
     role: "user",
+    profile: { child: null, caregiverRole: "Parent" },
   };
 
   users.push(user);
@@ -211,6 +213,7 @@ app.get("/api/auth/status", (req, res) => {
       username: req.user.username,
       email: req.user.email,
       role: req.user.role,
+      caregiverRole: req.user.caregiverRole || "Parent",
     },
   });
 });
@@ -267,6 +270,60 @@ app.delete("/api/Admin/Users/:id", requireAdmin, (req, res) => {
 
   res.json({ ok: true, message: "User deleted" });
 });
+
+// ✅ Profile Endpoints
+app.get("/api/Profile", requireAuth, (req, res) => {
+  const user = users.find((u) => u.id === req.user.id);
+  if (!user) return res.status(404).json({ ok: false, message: "User not found" });
+  res.json({ ok: true, profile: user.profile || { child: null, caregiverRole: "Parent" }, username: user.username });
+});
+
+app.put("/api/Profile/Child", requireAuth, (req, res) => {
+  const user = users.find((u) => u.id === req.user.id);
+  if (!user) return res.status(404).json({ ok: false, message: "User not found" });
+  if (!user.profile) user.profile = { child: null, caregiverRole: "Parent" };
+  user.profile.child = req.body.child;
+  res.json({ ok: true, child: user.profile.child });
+});
+
+app.put("/api/Profile/Caregiver", requireAuth, (req, res) => {
+  const user = users.find((u) => u.id === req.user.id);
+  if (!user) return res.status(404).json({ ok: false, message: "User not found" });
+  if (!user.profile) user.profile = { child: null, caregiverRole: "Parent" };
+
+  if (req.body.caregiverRole) user.profile.caregiverRole = req.body.caregiverRole;
+  if (req.body.username) user.username = req.body.username; // update name
+
+  res.json({ ok: true, caregiverRole: user.profile.caregiverRole, username: user.username });
+});
+
+// Change password
+app.put("/api/Profile/Password", requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ ok: false, message: "Missing fields" });
+  }
+
+  // Basic rule (optional)
+  if (newPassword.length < 6) {
+    return res.status(400).json({ ok: false, message: "Password must be at least 6 characters" });
+  }
+
+  const idx = users.findIndex((u) => u.id === req.user.id);
+  if (idx === -1) return res.status(404).json({ ok: false, message: "User not found" });
+
+  const user = users[idx];
+
+  const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!ok) return res.status(401).json({ ok: false, message: "Current password is incorrect" });
+
+  user.passwordHash = await bcrypt.hash(newPassword, 10);
+
+  return res.json({ ok: true, message: "Password updated successfully" });
+});
+
+
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Backend listening on http://localhost:${PORT}`));

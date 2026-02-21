@@ -2,10 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity, Smile, Heart, Plus, Camera, UserRound, Pencil } from "lucide-react";
 
-const STORAGE_KEYS = {
-  caregiverRole: (userId) => `stimtrack_caregiver_role_${userId}`,
-  childProfile: (userId) => `stimtrack_child_profile_${userId}`,
-};
+
 
 /* Desktop: overlay slides down from top */
 const overlayVariants = {
@@ -21,9 +18,12 @@ const expandVariants = {
   exit: { height: 0, opacity: 0, transition: { duration: 0.2, ease: "easeIn" } },
 };
 
+import { useNavigate } from "react-router-dom";
+
 const ProfileTab = ({ me }) => {
   const userId = me?.id || "guest";
-  const displayName = me?.username || "User";
+  const [localName, setLocalName] = useState(me?.username || "User");
+  const navigate = useNavigate();
 
   const [isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
@@ -50,28 +50,30 @@ const ProfileTab = ({ me }) => {
   });
 
   const initials = useMemo(() => {
-    const parts = displayName.trim().split(/\s+/);
+    const parts = localName.trim().split(/\s+/);
     const a = parts[0]?.[0] || "U";
     const b = parts[1]?.[0] || "";
     return (a + b).toUpperCase();
-  }, [displayName]);
+  }, [localName]);
 
   useEffect(() => {
-    try {
-      const savedRole = localStorage.getItem(STORAGE_KEYS.caregiverRole(userId));
-      if (savedRole) setRole(savedRole);
-      const savedChild = localStorage.getItem(STORAGE_KEYS.childProfile(userId));
-      if (savedChild) {
-        const parsed = JSON.parse(savedChild);
-        setChild(parsed);
-        if (parsed.photo) setChildPhoto(parsed.photo);
-      }
-    } catch { /* ignore */ }
+    if (userId === "guest") return;
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch("/api/Profile", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          setRole(data.profile.caregiverRole || "Parent");
+          if (data.profile.child) {
+            setChild(data.profile.child);
+            if (data.profile.child.photo) setChildPhoto(data.profile.child.photo);
+          }
+          if (data.username) setLocalName(data.username);
+        }
+      } catch (err) { }
+    }
+    fetchProfile();
   }, [userId]);
-
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEYS.caregiverRole(userId), role); } catch { /* ignore */ }
-  }, [role, userId]);
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
@@ -92,7 +94,7 @@ const ProfileTab = ({ me }) => {
     setAddingChild(true);
   };
 
-  const saveChild = () => {
+  const saveChild = async () => {
     if (!childForm.name.trim() || !String(childForm.age).trim()) {
       alert("Please enter child name and age.");
       return;
@@ -105,10 +107,23 @@ const ProfileTab = ({ me }) => {
       photo: childPhoto,
       monitored: true,
     };
-    setChild(newChild);
-    setAddingChild(false);
-    setChildForm({ name: "", age: "", gender: "", notes: "" });
-    try { localStorage.setItem(STORAGE_KEYS.childProfile(userId), JSON.stringify(newChild)); } catch { /* ignore */ }
+    try {
+      const res = await fetch("/api/Profile/Child", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ child: newChild })
+      });
+      if (res.ok) {
+        setChild(newChild);
+        setAddingChild(false);
+        setChildForm({ name: "", age: "", gender: "", notes: "" });
+      } else {
+        alert("Failed to save child profile");
+      }
+    } catch {
+      alert("Network error");
+    }
   };
 
   const cancelAddChild = () => {
@@ -116,7 +131,7 @@ const ProfileTab = ({ me }) => {
     setChildForm({ name: "", age: "", gender: "", notes: "" });
   };
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (!pwForm.currentPassword || !pwForm.newPassword || !pwForm.confirmPassword) {
       alert("Please complete all password fields."); return;
@@ -124,9 +139,55 @@ const ProfileTab = ({ me }) => {
     if (pwForm.newPassword !== pwForm.confirmPassword) {
       alert("New password and confirm password do not match."); return;
     }
-    alert("Password change saved (UI only for now).");
-    setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    setIsEditing(false);
+    try {
+      const res = await fetch("/api/Profile/Password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          currentPassword: pwForm.currentPassword,
+          newPassword: pwForm.newPassword
+        })
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        alert(data.message || "Password changed! Please log in with your new password.");
+        setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        setIsEditing(false);
+
+        // Log out the user
+        await fetch("/api/Logout", {
+          method: "POST",
+          credentials: "include",
+        });
+        navigate("/Login");
+      } else {
+        alert(data.message || "Failed to change password");
+      }
+    } catch (err) {
+      alert("Error changing password");
+    }
+  };
+
+  const handleSaveCaregiver = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/Profile/Caregiver", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ caregiverRole: role })
+      });
+      if (res.ok) {
+        alert("Details saved successfully");
+        setIsEditing(false);
+      } else {
+        alert("Failed to save details");
+      }
+    } catch {
+      alert("Network error");
+    }
   };
 
   /* ─── Shared edit form content ─── */
@@ -166,7 +227,7 @@ const ProfileTab = ({ me }) => {
         <input className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-slate-100" placeholder="Enter child's name" value={childForm.name} onChange={(e) => setChildForm((p) => ({ ...p, name: e.target.value }))} />
 
         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Age</label>
-        <input className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-slate-100" placeholder="Enter age" inputMode="numeric" value={childForm.age} onChange={(e) => setChildForm((p) => ({ ...p, age: e.target.value }))} />
+        <input className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-slate-100" placeholder="Enter age" inputMode="numeric" value={childForm.age} onChange={(e) => setChildForm((p) => ({ ...p, age: e.target.value.replace(/\D/g, "") }))} />
 
         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Gender</label>
         <select className="w-full max-w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-slate-100 truncate" value={childForm.gender} onChange={(e) => setChildForm((p) => ({ ...p, gender: e.target.value }))}>
@@ -187,26 +248,27 @@ const ProfileTab = ({ me }) => {
       <div className="flex items-center justify-between gap-3 mb-6">
         <h3 className="text-xl font-black text-slate-900 dark:text-white">Edit Profile</h3>
         <button onClick={() => setIsEditing(false)} className="px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-colors">
-          Done
+          Cancel
         </button>
       </div>
 
-      <div className="mb-6">
-        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Role</label>
+      <form onSubmit={handleSaveCaregiver} className="mb-6 space-y-3">
+
+        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Role</label>
         <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full max-w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-slate-100 truncate">
           <option value="Parent">Parent</option>
           <option value="Caregiver">Caregiver</option>
         </select>
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Default is Parent. This can be changed anytime.</p>
-      </div>
+        <button type="submit" className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-colors mt-2">Save Details</button>
+      </form>
 
-      <form onSubmit={handlePasswordChange} className="space-y-3">
+      <form onSubmit={handlePasswordChange} className="space-y-3 pt-6 border-t border-slate-200 dark:border-slate-700">
         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Change Password</label>
         <input type="password" placeholder="Current password" value={pwForm.currentPassword} onChange={(e) => setPwForm((p) => ({ ...p, currentPassword: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-slate-100" />
         <input type="password" placeholder="New password" value={pwForm.newPassword} onChange={(e) => setPwForm((p) => ({ ...p, newPassword: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-slate-100" />
         <input type="password" placeholder="Confirm new password" value={pwForm.confirmPassword} onChange={(e) => setPwForm((p) => ({ ...p, confirmPassword: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-slate-100" />
-        <button type="submit" className="w-full py-3 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-bold transition-colors">Save Password</button>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Note: This is UI-only for now. We will connect this to the backend later.</p>
+        <button type="submit" className="w-full py-3 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-bold transition-colors">Update Password</button>
       </form>
     </>
   );
@@ -317,7 +379,7 @@ const ProfileTab = ({ me }) => {
       <div className="relative">
         {/* Desktop: overlay container */}
         <motion.div
-          animate={{ height: isDesktop && isEditing ? 600 : 455 }}
+          animate={{ height: isDesktop && isEditing ? 635 : 455 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className="relative md:rounded-[2rem] md:overflow-hidden"
         >
@@ -335,7 +397,7 @@ const ProfileTab = ({ me }) => {
               </div>
 
               <p className="text-sm font-bold text-pink-500 uppercase tracking-widest mb-1">{role}</p>
-              <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-2 transition-colors">{displayName}</h2>
+              <h2 className="text-4xl font-black text-slate-900 dark:text-white mb-2 transition-colors">{localName}</h2>
               <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors inline-flex items-center gap-2">
                 <UserRound size={16} /> ID: {userId}
               </p>
