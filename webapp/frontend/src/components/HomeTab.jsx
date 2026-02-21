@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Download, AlertCircle, FileText, Activity } from 'lucide-react';
+import { getEmotionDotColor, getEmotionTagStyle } from '../utils/emotionUtils';
 
 const HomeTab = ({ logs, selectedLogId, onLogClick, containerVariants, itemVariants }) => {
     return (
@@ -28,13 +30,10 @@ const HomeTab = ({ logs, selectedLogId, onLogClick, containerVariants, itemVaria
                 >
                     <div className="flex justify-between items-start mb-3">
                         <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${log.emotion === 'Happy' ? 'bg-green-500' : 'bg-orange-500'}`} />
+                            <span className={`w-2 h-2 rounded-full ${getEmotionDotColor(log.emotion)}`} />
                             <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{log.time}</span>
                         </div>
-                        <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border
-              ${log.emotion === 'Happy'
-                                ? 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border-green-100 dark:border-green-500/20'
-                                : 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/20'}`}>
+                        <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${getEmotionTagStyle(log.emotion)}`}>
                             {(log.confidence * 100).toFixed(0)}% Acc
                         </div>
                     </div>

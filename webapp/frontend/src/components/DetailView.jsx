@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-    Smile, Frown, Activity, FileText, ArrowLeft, ShieldCheck
+    Activity, FileText, ArrowLeft, ShieldCheck
 } from 'lucide-react';
+import { getEmotionBoxStyle, getEmotionIcon } from '../utils/emotionUtils';
 
 const DetailView = ({ log, onClose, childName = "Child" }) => {
     if (!log) return null;
@@ -59,8 +60,8 @@ const DetailView = ({ log, onClose, childName = "Child" }) => {
                 <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex flex-col items-center text-center gap-3 transition-colors duration-300">
-                            <div className={`p-3 rounded-2xl ${log.emotion === 'Happy' ? 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400' : 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400'}`}>
-                                {log.emotion === 'Happy' ? <Smile size={28} strokeWidth={2.5} /> : <Frown size={28} strokeWidth={2.5} />}
+                            <div className={`p-3 rounded-2xl ${getEmotionBoxStyle(log.emotion)}`}>
+                                {getEmotionIcon(log.emotion)}
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Emotion</p>

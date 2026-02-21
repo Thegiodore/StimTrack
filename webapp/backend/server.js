@@ -79,7 +79,7 @@ function makeMockLogs() {
       time: "09:16",
       date: "Feb 3, 2026",
       type: "Rocking",
-      emotion: "Anxious",
+      emotion: "Sad",
       confidence: 0.88,
       image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=400",
       details: "Rhythmic swaying detected while sitting near the window.",

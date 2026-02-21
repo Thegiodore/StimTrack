@@ -4,6 +4,7 @@ import { FileText, Search, ChevronDown, ChevronUp, Download, Calendar, X } from 
 import { useTheme } from "../context/ThemeContext";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { getEmotionDotColor, getEmotionTagStyle } from '../utils/emotionUtils';
 
 const SORTABLE = ["time", "confidence"];
 
@@ -17,7 +18,9 @@ const TYPE_FILTERS = [
 const EMOTION_FILTERS = [
     { id: "all", label: "All" },
     { id: "Happy", label: "Happy" },
-    { id: "Stressed", label: "Stressed" },
+    { id: "Sad", label: "Sad" },
+    { id: "Neutral", label: "Neutral" },
+    { id: "Angry", label: "Angry" },
 ];
 
 const DATE_RANGES = [
@@ -512,17 +515,14 @@ export default function ReportsTab({ logs, childName = "Child" }) {
                                     <div className="flex items-start justify-between gap-3 mb-2">
                                         <div className="flex items-center gap-2">
                                             <span
-                                                className={`w-2 h-2 rounded-full shrink-0 ${log.emotion === "Happy" ? "bg-green-500" : "bg-orange-500"}`}
+                                                className={`w-2 h-2 rounded-full shrink-0 ${getEmotionDotColor(log.emotion)}`}
                                             />
                                             <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                                                 {log.time}
                                             </span>
                                         </div>
                                         <span
-                                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border shrink-0 ${log.emotion === "Happy"
-                                                ? "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border-green-100 dark:border-green-500/20"
-                                                : "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/20"
-                                                }`}
+                                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border shrink-0 ${getEmotionTagStyle(log.emotion)}`}
                                         >
                                             {(log.confidence * 100).toFixed(0)}%
                                         </span>
@@ -573,13 +573,10 @@ export default function ReportsTab({ logs, childName = "Child" }) {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span
-                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${log.emotion === "Happy"
-                                                        ? "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border-green-100 dark:border-green-500/20"
-                                                        : "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/20"
-                                                        }`}
+                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${getEmotionTagStyle(log.emotion)}`}
                                                 >
                                                     <span
-                                                        className={`w-1.5 h-1.5 rounded-full ${log.emotion === "Happy" ? "bg-green-500" : "bg-orange-500"}`}
+                                                        className={`w-1.5 h-1.5 rounded-full ${getEmotionDotColor(log.emotion)}`}
                                                     />
                                                     {log.emotion}
                                                 </span>
