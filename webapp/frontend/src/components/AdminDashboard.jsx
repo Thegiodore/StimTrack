@@ -125,6 +125,16 @@ export default function AdminDashboard() {
               {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
             </button>
 
+            {/* Desktop: single-click logout */}
+            <button
+              onClick={handleLogout}
+              className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400 font-semibold text-sm hover:bg-red-100 dark:hover:bg-red-500/20 transition-all duration-300"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+
+            {/* Mobile: two-step logout */}
             <motion.button
               layout
               onClick={() => {
@@ -135,7 +145,7 @@ export default function AdminDashboard() {
                   setTimeout(() => setLogoutExpanded(false), 3000);
                 }
               }}
-              className="flex items-center px-2.5 py-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400 font-semibold text-sm hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors duration-300 overflow-hidden"
+              className="flex sm:hidden items-center px-2.5 py-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400 font-semibold text-sm hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors duration-300 overflow-hidden"
               transition={{ layout: { duration: 0.25, ease: "easeInOut" } }}
             >
               <motion.span layout="position"><LogOut size={16} className="shrink-0" /></motion.span>
