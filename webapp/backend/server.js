@@ -73,7 +73,32 @@ const logsByUserId = {};
 
 function ensureUserLogs(userId) {
   if (!logsByUserId[userId]) {
-    logsByUserId[userId] = []; // Start with empty array for real data
+    // Seed a small set of mock logs for new users to make the UI show the
+    // mock design during development. Real deployments should persist real data.
+    logsByUserId[userId] = [
+      {
+        id: Date.now() + 1,
+        time: "10:12 AM",
+        date: new Date().toISOString().slice(0, 10),
+        type: "Hand Flap",
+        emotion: "happy",
+        confidence: 0.87,
+        accuracy: 0.87,
+        image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=60",
+        details: "Mock: child was hand flapping while smiling."
+      },
+      {
+        id: Date.now() + 2,
+        time: "11:05 AM",
+        date: new Date().toISOString().slice(0, 10),
+        type: "Rocking",
+        emotion: "neutral",
+        confidence: 0.65,
+        accuracy: 0.65,
+        image: "https://images.unsplash.com/photo-1502767089025-6572583495b0?w=800&q=60",
+        details: "Mock: detected gentle rocking motion."
+      },
+    ];
   }
   return logsByUserId[userId];
 }
@@ -119,6 +144,8 @@ app.post("/api/ai/detection", (req, res) => {
     type: action,      // Mapping 'action' from Python to 'type' in your JSX
     emotion: emotion,
     accuracy: accuracy,
+    // Provide `confidence` alias for frontend components expecting this prop
+    confidence: accuracy,
     image: frame,      // Base64 string
     details: `AI detected ${action} with ${emotion} expression.`
   };
