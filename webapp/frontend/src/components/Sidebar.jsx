@@ -36,7 +36,7 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 group
+            className={`tour-${item.id.toLowerCase()} flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 group
               ${activeTab === item.id
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20 scale-[1.02]'
                 : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400'

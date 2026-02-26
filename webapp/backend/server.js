@@ -134,7 +134,7 @@ app.post("/api/ai/detection", (req, res) => {
 
   // For thesis prototype: We send this to the main Admin user
   // In production, the Mini PC would send a specific 'userId'
-  const targetUserId = "admin-1"; 
+  const targetUserId = "admin-1";
   const logs = ensureUserLogs(targetUserId);
 
   const newLog = {
@@ -174,7 +174,7 @@ app.post("/api/Register", async (req, res) => {
     email,
     passwordHash,
     role: "user",
-    profile: { child: null, caregiverRole: "Parent" },
+    profile: { child: null, caregiverRole: "Parent", hasCompletedTutorial: false },
   };
   users.push(user);
   ensureUserLogs(user.id);
@@ -213,8 +213,78 @@ app.get("/api/Logs", requireAuth, (req, res) => {
   res.json({ ok: true, logs });
 });
 
-// Admin and Profile routes remain unchanged...
-// [Keeping your Profile/Admin logic here as it was]
+// Profile and Admin logic
+app.put("/api/Profile/Tutorial", requireAuth, (req, res) => {
+  const user = users.find((u) => u.id === req.user.id);
+  if (!user) return res.status(404).json({ ok: false, message: "User not found" });
+  if (!user.profile) user.profile = { child: null, caregiverRole: "Parent", caregiverName: "", hasCompletedTutorial: false };
+  user.profile.hasCompletedTutorial = true;
+  res.json({ ok: true, message: "Tutorial completed" });
+});
+
+app.get("/api/Admin/Users", requireAdmin, (req, res) => {
+  const safeUsers = users.map(u => ({
+    id: u.id,
+    username: u.username,
+    email: u.email,
+    role: u.role
+  }));
+  res.json({ ok: true, users: safeUsers });
+});
+
+app.delete("/api/Admin/Users/:id", requireAdmin, (req, res) => {
+  const targetId = req.params.id;
+  const targetUser = users.find(u => u.id === targetId);
+  if (!targetUser) return res.status(404).json({ ok: false, message: "User not found" });
+  if (targetUser.role === "admin") return res.status(403).json({ ok: false, message: "Cannot delete admin users" });
+
+  const idx = users.findIndex(u => u.id === targetId);
+  if (idx !== -1) {
+    users.splice(idx, 1);
+    delete logsByUserId[targetId];
+  }
+  res.json({ ok: true, message: "User deleted" });
+});
+app.get("/api/Profile", requireAuth, (req, res) => {
+  const user = users.find((u) => u.id === req.user.id);
+  if (!user) return res.status(404).json({ ok: false, message: "User not found" });
+  res.json({ ok: true, profile: user.profile || { child: null, caregiverRole: "Parent", caregiverName: "" }, username: user.username });
+});
+
+app.put("/api/Profile/Child", requireAuth, (req, res) => {
+  const user = users.find((u) => u.id === req.user.id);
+  if (!user) return res.status(404).json({ ok: false, message: "User not found" });
+  if (!user.profile) user.profile = { child: null, caregiverRole: "Parent", caregiverName: "" };
+  user.profile.child = req.body.child;
+  res.json({ ok: true, child: user.profile.child });
+});
+
+app.put("/api/Profile/Caregiver", requireAuth, (req, res) => {
+  const user = users.find((u) => u.id === req.user.id);
+  if (!user) return res.status(404).json({ ok: false, message: "User not found" });
+  if (!user.profile) user.profile = { child: null, caregiverRole: "Parent", caregiverName: "" };
+
+  if (req.body.caregiverRole) user.profile.caregiverRole = req.body.caregiverRole;
+  if (req.body.caregiverName !== undefined) user.profile.caregiverName = req.body.caregiverName;
+  if (req.body.username) user.username = req.body.username;
+
+  res.json({ ok: true, caregiverRole: user.profile.caregiverRole, caregiverName: user.profile.caregiverName, username: user.username });
+});
+
+app.put("/api/Profile/Password", requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) return res.status(400).json({ ok: false, message: "Missing fields" });
+  if (currentPassword === newPassword) return res.status(400).json({ ok: false, message: "New password cannot be the same as the current password" });
+
+  const idx = users.findIndex((u) => u.id === req.user.id);
+  if (idx === -1) return res.status(404).json({ ok: false, message: "User not found" });
+
+  const ok = await bcrypt.compare(currentPassword, users[idx].passwordHash);
+  if (!ok) return res.status(401).json({ ok: false, message: "Current password is incorrect" });
+
+  users[idx].passwordHash = await bcrypt.hash(newPassword, 10);
+  return res.json({ ok: true, message: "Password updated successfully" });
+});
 
 // 6. START SERVER USING THE 'server' CONSTANT (Necessary for Socket.io)
 const PORT = 5000;

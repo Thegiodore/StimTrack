@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Brain, Sun, Moon, LogOut, Trash2, Shield, Users } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import Popup from "./Popup";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState(null);
   const [logoutExpanded, setLogoutExpanded] = useState(false);
+  const [popup, setPopup] = useState({ isOpen: false });
 
   const loadUsers = async () => {
     setLoading(true);
@@ -38,8 +40,16 @@ export default function AdminDashboard() {
     }
 
     if (res.status === 403) {
-      alert("Admin only.");
-      navigate("/Dashboard");
+      setPopup({
+        isOpen: true,
+        type: "error",
+        title: "Access Denied",
+        message: "Admin only.",
+        onConfirm: () => {
+          setPopup({ isOpen: false });
+          navigate("/Dashboard");
+        }
+      });
       return;
     }
 
@@ -54,22 +64,37 @@ export default function AdminDashboard() {
   }, []);
 
   const deleteUser = async (id) => {
-    const ok = confirm("Delete this user?");
-    if (!ok) return;
+    setPopup({
+      isOpen: true,
+      type: "warning",
+      title: "Delete User",
+      message: "Are you sure you want to delete this user? This cannot be undone.",
+      showCancel: true,
+      confirmText: "Delete",
+      onCancel: () => setPopup({ isOpen: false }),
+      onConfirm: async () => {
+        setPopup({ isOpen: false });
+        const res = await fetch(`/api/Admin/Users/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
 
-    const res = await fetch(`/api/Admin/Users/${id}`, {
-      method: "DELETE",
-      credentials: "include",
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          setPopup({
+            isOpen: true,
+            type: "error",
+            title: "Error",
+            message: data.message || "Delete failed",
+            onConfirm: () => setPopup({ isOpen: false })
+          });
+          return;
+        }
+
+        loadUsers();
+      }
     });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      alert(data.message || "Delete failed");
-      return;
-    }
-
-    loadUsers();
   };
 
   const handleLogout = async () => {
@@ -96,6 +121,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors duration-300">
+      <Popup {...popup} />
 
       {/* TOP BAR */}
       <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800 transition-colors duration-300">

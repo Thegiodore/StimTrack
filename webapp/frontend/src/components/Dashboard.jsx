@@ -14,6 +14,8 @@ import DetectionsTab from "./DetectionsTab";
 import ReportsTab from "./ReportsTab";
 import DetailView from "./DetailView";
 import Toast from "./Toast";
+import TutorialWalkthrough from "./TutorialWalkthrough";
+import ChildSetupWalkthrough from "./ChildSetupWalkthrough";
 
 import { useNavigate } from "react-router-dom";
 
@@ -21,11 +23,23 @@ const Dashboard = () => {
   const { theme, toggleTheme } = useTheme();
   const [me, setMe] = useState(null);
   const [childName, setChildName] = useState("Child");
+  const [caregiverRole, setCaregiverRole] = useState("Parent/Caregiver");
+  const [caregiverName, setCaregiverName] = useState("");
   const [logs, setLogs] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
   const [activeTab, setActiveTab] = useState("Home");
   const [toast, setToast] = useState({ visible: false, message: "" });
   const [logoutExpanded, setLogoutExpanded] = useState(false);
+  const [runTutorial, setRunTutorial] = useState(false);
+  const [runChildSetup, setRunChildSetup] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  const mockLogs = [
+    { id: "mock1", time: "09:15 AM", type: "Hand Flapping", emotion: "Happy", confidence: 0.95, details: "Mock observation" },
+    { id: "mock2", time: "10:30 AM", type: "Pacing", emotion: "Neutral", confidence: 0.88, details: "Mock pacing near window" },
+    { id: "mock3", time: "01:45 PM", type: "Head Banging", emotion: "Angry", confidence: 0.92, details: "Mock severe stimming" },
+  ];
+  const displayedLogs = runTutorial ? mockLogs : logs;
 
   const navigate = useNavigate();
 
@@ -96,12 +110,46 @@ const Dashboard = () => {
         if (profileData?.profile?.child?.name) {
           setChildName(profileData.profile.child.name);
         }
+        if (profileData?.profile) {
+          setCaregiverRole(profileData.profile.caregiverRole || "Parent/Caregiver");
+          setCaregiverName(profileData.profile.caregiverName || "");
+
+          if (profileData.profile.hasCompletedTutorial !== true) {
+            setActiveTab("Home");
+            setRunTutorial(true);
+          } else if (!profileData.profile.child || !profileData.profile.child.name) {
+            setRunChildSetup(true);
+            setActiveTab("Profile");
+          }
+        }
+        setProfileLoaded(true); // Ensure enforcement hook knows data is loaded
       } catch (err) {
         navigate("/Login");
       }
     };
     init();
   }, [navigate]);
+
+  // Enforce Child Profile Setup
+  useEffect(() => {
+    if (!profileLoaded) return; // Wait until API finishes
+    // If tutorial is not running, and child profile is missing, lock user to Profile tab
+    if (!runTutorial && (!childName || childName === "Child")) {
+      if (activeTab !== "Profile") {
+        setActiveTab("Profile");
+        setRunChildSetup(true);
+      }
+    }
+  }, [activeTab, childName, runTutorial, profileLoaded]);
+
+  const handleTutorialFinish = async () => {
+    setRunTutorial(false);
+    await fetch("/api/Profile/Tutorial", { method: "PUT", credentials: "include" });
+    if (!childName || childName === "Child") {
+      setActiveTab("Profile");
+      setTimeout(() => setRunChildSetup(true), 500);
+    }
+  };
 
   // ... (Keep all your existing Animation Variants and Nav Items the same)
   const containerVariants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
@@ -122,6 +170,8 @@ const Dashboard = () => {
       />
 
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
+      <TutorialWalkthrough run={runTutorial} onFinish={handleTutorialFinish} setActiveTab={setActiveTab} />
+      <ChildSetupWalkthrough run={runChildSetup} onFinish={() => setRunChildSetup(false)} />
 
       {/* MOBILE HEADER */}
       <div className="md:hidden sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800">
@@ -134,7 +184,7 @@ const Dashboard = () => {
           </div>
           {/* ... Rest of mobile header icons ... */}
           <div className="flex items-center gap-2">
-            <button onClick={toggleTheme} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/60 text-slate-500 dark:text-slate-400">
+            <button onClick={toggleTheme} className="tour-theme p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/60 text-slate-500 dark:text-slate-400">
               {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
             </button>
           </div>
@@ -159,7 +209,7 @@ const Dashboard = () => {
               </div>
 
               {/* Desktop Theme Toggle */}
-              <button onClick={toggleTheme} className="hidden md:block relative w-16 h-8 rounded-full p-0.5 bg-slate-200 dark:bg-indigo-900 transition-colors">
+              <button onClick={toggleTheme} className="tour-theme hidden md:block relative w-16 h-8 rounded-full p-0.5 bg-slate-200 dark:bg-indigo-900 transition-colors">
                 <motion.div layout className={`w-7 h-7 rounded-full shadow-md flex items-center justify-center ${theme === 'dark' ? 'bg-indigo-500 ml-auto' : 'bg-white'}`}>
                   {theme === 'light' ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} className="text-white" />}
                 </motion.div>
@@ -168,11 +218,11 @@ const Dashboard = () => {
 
             <AnimatePresence mode="wait">
               {activeTab === "Home" && (
-                <HomeTab logs={logs} selectedLogId={selectedLog?.id} onLogClick={setSelectedLog} containerVariants={containerVariants} itemVariants={itemVariants} />
+                <HomeTab logs={displayedLogs} selectedLogId={selectedLog?.id} onLogClick={setSelectedLog} containerVariants={containerVariants} itemVariants={itemVariants} />
               )}
-              {activeTab === "Detections" && <DetectionsTab logs={logs} childName={childName} />}
-              {activeTab === "Reports" && <ReportsTab logs={logs} childName={childName} />}
-              {activeTab === "Profile" && <ProfileTab me={me} />}
+              {activeTab === "Detections" && <DetectionsTab logs={displayedLogs} childName={childName} />}
+              {activeTab === "Reports" && <ReportsTab logs={displayedLogs} childName={childName} caregiverName={caregiverName || me?.username || "User"} caregiverRole={caregiverRole} />}
+              {activeTab === "Profile" && <ProfileTab me={me} onChildSetupCancel={() => setRunChildSetup(true)} onChildUpdated={setChildName} onCaregiverUpdated={(name, role) => { setCaregiverName(name); setCaregiverRole(role); }} />}
             </AnimatePresence>
           </div>
         </div>
@@ -191,8 +241,8 @@ const Dashboard = () => {
       {/* MOBILE NAV (Keep as is) */}
       <nav className="md:hidden fixed bottom-0 w-full bg-white/90 dark:bg-slate-900/90 border-t pb-safe pt-2 px-6 z-50 flex justify-between items-center">
         {navItems.map((item) => (
-          <button key={item.id} onClick={() => { setActiveTab(item.id); setSelectedLog(null); }} className="flex flex-col items-center gap-1 p-3">
-             <item.icon size={24} className={activeTab === item.id ? "text-indigo-600" : "text-slate-400"} />
+          <button key={item.id} onClick={() => { setActiveTab(item.id); setSelectedLog(null); }} className={`flex flex-col items-center gap-1 p-3 tour-${item.id.toLowerCase()}`}>
+            <item.icon size={24} className={activeTab === item.id ? "text-indigo-600" : "text-slate-400"} />
           </button>
         ))}
       </nav>
