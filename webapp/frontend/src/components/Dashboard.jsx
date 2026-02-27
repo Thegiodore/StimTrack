@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Activity, Home, FileText, User } from "lucide-react";
+import { Activity, Home, FileText, User, Brain, Sun, Moon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Brain, Sun, Moon, LogOut } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
-
-// ✨ NEW: Import socket.io-client (Make sure to run 'npm install socket.io-client')
+import { useNavigate } from "react-router-dom";
 import io from "socket.io-client";
 
+// Component Imports
 import Sidebar from "./Sidebar";
 import HomeTab from "./HomeTab";
 import ProfileTab from "./ProfileTab";
@@ -16,8 +15,6 @@ import DetailView from "./DetailView";
 import Toast from "./Toast";
 import TutorialWalkthrough from "./TutorialWalkthrough";
 import ChildSetupWalkthrough from "./ChildSetupWalkthrough";
-
-import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const { theme, toggleTheme } = useTheme();
@@ -29,137 +26,83 @@ const Dashboard = () => {
   const [selectedLog, setSelectedLog] = useState(null);
   const [activeTab, setActiveTab] = useState("Home");
   const [toast, setToast] = useState({ visible: false, message: "" });
-  const [logoutExpanded, setLogoutExpanded] = useState(false);
-  const [runTutorial, setRunTutorial] = useState(false);
-  const [runChildSetup, setRunChildSetup] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
-
-  const mockLogs = [
-    { id: "mock1", time: "09:15 AM", type: "Hand Flapping", emotion: "Happy", confidence: 0.95, details: "Mock observation" },
-    { id: "mock2", time: "10:30 AM", type: "Pacing", emotion: "Neutral", confidence: 0.88, details: "Mock pacing near window" },
-    { id: "mock3", time: "01:45 PM", type: "Head Banging", emotion: "Angry", confidence: 0.92, details: "Mock severe stimming" },
-  ];
-  const displayedLogs = runTutorial ? mockLogs : logs;
 
   const navigate = useNavigate();
 
-  // ✨ NEW: REAL-TIME SOCKET CONNECTION
+  // ✨ FINAL SOCKET LISTENER WITH DIAGNOSTICS
   useEffect(() => {
-    // We use the laptop's IP here
+    // Replace with your laptop's actual IP
     const socket = io("http://192.168.1.9:5000");
 
     socket.on("connect", () => {
-      console.log("✅ Connected to AI Server via Socket");
+      console.log("✅ Dashboard connected to Socket.io");
     });
 
-    // Listen for the AI detection signal
-    socket.on("NEW_DETECTION", (newLog) => {
-      console.log("🚀 Real-time AI Event Received:", newLog);
+    socket.on("NEW_DETECTION", (incomingData) => {
+      // 🔍 DIAGNOSTIC LOG
+      console.log("🚀 Incoming Data Packet:", incomingData);
+      console.log("📸 Image Data Status:", incomingData.image ? `Received (${incomingData.image.length} chars)` : "MISSING/EMPTY");
 
-      // 1. Add the new log to the top of the list
-      setLogs((prevLogs) => [newLog, ...prevLogs]);
+      // Find the movement label (Support action, type, or label)
+      const movementType = incomingData.type || incomingData.action || incomingData.label;
 
-      // 2. Show a notification toast
-      setToast({
-        visible: true,
-        message: `New Detection: ${newLog.label} (${(newLog.accuracy * 100).toFixed(0)}%)`
-      });
+      if (movementType) {
+        const newLog = {
+          id: incomingData.id || Date.now().toString(),
+          time: incomingData.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          date: incomingData.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          type: movementType,
+          emotion: incomingData.emotion || "Neutral", 
+          confidence: incomingData.accuracy || incomingData.confidence || 0,
+          // Support 'image' or 'frame' from Python
+          image: incomingData.image || incomingData.frame || null, 
+          details: incomingData.details || `AI detected ${movementType} with ${incomingData.emotion || 'neutral'} expression.`
+        };
+
+        setLogs((prevLogs) => [newLog, ...prevLogs]);
+
+        setToast({
+          visible: true,
+          message: `🚨 ${newLog.type} detected!`
+        });
+      }
     });
 
-    return () => {
-      socket.disconnect(); // Cleanup connection when closing the app
-    };
+    return () => socket.disconnect();
   }, []);
 
-  // Close detail view when switching tabs
-  useEffect(() => {
-    setSelectedLog(null);
-  }, [activeTab]);
-
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/Logout", {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      navigate("/Login");
-    }
-  };
-
-  // Auth check + load user info
+  // Auth & Profile Initial Load
   useEffect(() => {
     const init = async () => {
       try {
         const res = await fetch("/api/auth/status", { credentials: "include" });
         if (!res.ok) { navigate("/Login"); return; }
-
-        const data = await res.json().catch(() => null);
+        const data = await res.json();
         if (!data?.authenticated) { navigate("/Login"); return; }
         setMe(data.user);
 
-        // Load existing logs from Database
         const logsRes = await fetch("/api/Logs", { credentials: "include" });
-        const logsData = await logsRes.json().catch(() => null);
+        const logsData = await logsRes.json();
         setLogs(logsData?.logs || []);
 
         const profileRes = await fetch("/api/Profile", { credentials: "include" });
-        const profileData = await profileRes.json().catch(() => null);
-        if (profileData?.profile?.child?.name) {
-          setChildName(profileData.profile.child.name);
-        }
-        if (profileData?.profile) {
-          setCaregiverRole(profileData.profile.caregiverRole || "Parent/Caregiver");
-          setCaregiverName(profileData.profile.caregiverName || "");
-
-          if (profileData.profile.hasCompletedTutorial !== true) {
-            setActiveTab("Home");
-            setRunTutorial(true);
-          } else if (!profileData.profile.child || !profileData.profile.child.name) {
-            setRunChildSetup(true);
-            setActiveTab("Profile");
-          }
-        }
-        setProfileLoaded(true); // Ensure enforcement hook knows data is loaded
-      } catch (err) {
-        navigate("/Login");
+        const profileData = await profileRes.json();
+        if (profileData?.profile?.child?.name) setChildName(profileData.profile.child.name);
+        
+        setProfileLoaded(true);
+      } catch (err) { 
+        console.error("Auth init error:", err);
+        navigate("/Login"); 
       }
     };
     init();
   }, [navigate]);
 
-  // Enforce Child Profile Setup
-  useEffect(() => {
-    if (!profileLoaded) return; // Wait until API finishes
-    // If tutorial is not running, and child profile is missing, lock user to Profile tab
-    if (!runTutorial && (!childName || childName === "Child")) {
-      if (activeTab !== "Profile") {
-        setActiveTab("Profile");
-        setRunChildSetup(true);
-      }
-    }
-  }, [activeTab, childName, runTutorial, profileLoaded]);
-
-  const handleTutorialFinish = async () => {
-    setRunTutorial(false);
-    await fetch("/api/Profile/Tutorial", { method: "PUT", credentials: "include" });
-    if (!childName || childName === "Child") {
-      setActiveTab("Profile");
-      setTimeout(() => setRunChildSetup(true), 500);
-    }
+  const handleLogout = async () => {
+    try { await fetch("/api/Logout", { method: "POST", credentials: "include" }); }
+    finally { navigate("/Login"); }
   };
-
-  // ... (Keep all your existing Animation Variants and Nav Items the same)
-  const containerVariants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
-  const itemVariants = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
-  const navItems = [
-    { id: "Home", icon: Home, label: "Home" },
-    { id: "Detections", icon: Activity, label: "Detections" },
-    { id: "Reports", icon: FileText, label: "Reports" },
-    { id: "Profile", icon: User, label: "Profile" },
-  ];
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-200 overflow-hidden transition-colors duration-300">
@@ -170,26 +113,6 @@ const Dashboard = () => {
       />
 
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
-      <TutorialWalkthrough run={runTutorial} onFinish={handleTutorialFinish} setActiveTab={setActiveTab} />
-      <ChildSetupWalkthrough run={runChildSetup} onFinish={() => setRunChildSetup(false)} />
-
-      {/* MOBILE HEADER */}
-      <div className="md:hidden sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800">
-        <div className="px-5 sm:px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-50 dark:bg-slate-800 rounded-xl text-indigo-600 dark:text-indigo-400">
-              <Brain size={24} />
-            </div>
-            <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">StimTrack</h1>
-          </div>
-          {/* ... Rest of mobile header icons ... */}
-          <div className="flex items-center gap-2">
-            <button onClick={toggleTheme} className="tour-theme p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/60 text-slate-500 dark:text-slate-400">
-              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
-            </button>
-          </div>
-        </div>
-      </div>
 
       <main className="flex-1 relative overflow-hidden flex flex-col md:flex-row">
         <div className="flex-1 flex flex-col relative h-full overflow-hidden">
@@ -199,17 +122,14 @@ const Dashboard = () => {
                 <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-2">
                   {activeTab === "Home" ? `Hello, ${me?.username || "User"} 👋` : activeTab}
                 </h2>
-                {activeTab === "Home" && me?.id && <p className="text-sm text-slate-500 font-medium">ID: {me.id}</p>}
                 <p className="text-slate-500 dark:text-slate-400 font-medium">
-                  {activeTab === "Home" && "Here's today's activity summary."}
-                  {activeTab === "Detections" && "Track stimming patterns and frequency."}
-                  {activeTab === "Reports" && "Detailed log of all detections."}
-                  {activeTab === "Profile" && "Manage child and caregiver profile."}
+                  {activeTab === "Home" && "Real-time AI monitoring active."}
+                  {activeTab === "Detections" && "Visualizing behavioral patterns."}
+                  {activeTab === "Reports" && "Exportable activity history."}
                 </p>
               </div>
 
-              {/* Desktop Theme Toggle */}
-              <button onClick={toggleTheme} className="tour-theme hidden md:block relative w-16 h-8 rounded-full p-0.5 bg-slate-200 dark:bg-indigo-900 transition-colors">
+              <button onClick={toggleTheme} className="hidden md:block relative w-16 h-8 rounded-full p-0.5 bg-slate-200 dark:bg-indigo-900 transition-colors">
                 <motion.div layout className={`w-7 h-7 rounded-full shadow-md flex items-center justify-center ${theme === 'dark' ? 'bg-indigo-500 ml-auto' : 'bg-white'}`}>
                   {theme === 'light' ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} className="text-white" />}
                 </motion.div>
@@ -218,34 +138,21 @@ const Dashboard = () => {
 
             <AnimatePresence mode="wait">
               {activeTab === "Home" && (
-                <HomeTab logs={displayedLogs} selectedLogId={selectedLog?.id} onLogClick={setSelectedLog} containerVariants={containerVariants} itemVariants={itemVariants} />
+                <HomeTab logs={logs} onLogClick={setSelectedLog} selectedLogId={selectedLog?.id} />
               )}
-              {activeTab === "Detections" && <DetectionsTab logs={displayedLogs} childName={childName} />}
-              {activeTab === "Reports" && <ReportsTab logs={displayedLogs} childName={childName} caregiverName={caregiverName || me?.username || "User"} caregiverRole={caregiverRole} />}
-              {activeTab === "Profile" && <ProfileTab me={me} onChildSetupCancel={() => setRunChildSetup(true)} onChildUpdated={setChildName} onCaregiverUpdated={(name, role) => { setCaregiverName(name); setCaregiverRole(role); }} />}
+              {activeTab === "Detections" && <DetectionsTab logs={logs} childName={childName} />}
+              {activeTab === "Reports" && <ReportsTab logs={logs} childName={childName} />}
+              {activeTab === "Profile" && <ProfileTab me={me} onChildUpdated={setChildName} />}
             </AnimatePresence>
           </div>
         </div>
 
-        {/* DETAIL VIEW */}
         <AnimatePresence>
           {selectedLog && (
-            <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedLog(null)} className="hidden lg:block absolute inset-0 bg-slate-900/30 dark:bg-black/50 z-30 backdrop-blur-[1px]" />
-              <DetailView log={selectedLog} onClose={() => setSelectedLog(null)} childName={childName} />
-            </>
+            <DetailView log={selectedLog} onClose={() => setSelectedLog(null)} childName={childName} />
           )}
         </AnimatePresence>
       </main>
-
-      {/* MOBILE NAV (Keep as is) */}
-      <nav className="md:hidden fixed bottom-0 w-full bg-white/90 dark:bg-slate-900/90 border-t pb-safe pt-2 px-6 z-50 flex justify-between items-center">
-        {navItems.map((item) => (
-          <button key={item.id} onClick={() => { setActiveTab(item.id); setSelectedLog(null); }} className={`flex flex-col items-center gap-1 p-3 tour-${item.id.toLowerCase()}`}>
-            <item.icon size={24} className={activeTab === item.id ? "text-indigo-600" : "text-slate-400"} />
-          </button>
-        ))}
-      </nav>
     </div>
   );
 };

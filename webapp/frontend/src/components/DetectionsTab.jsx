@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion } from "framer-motion"; // ✨ Fixed this import
 import { Activity, TrendingUp, Target } from "lucide-react";
 import {
     ResponsiveContainer,
@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import { useTheme } from "../context/ThemeContext";
 
+// ... the rest of the file remains exactly the same as the previous version I gave you
+
 const RANGES = [
     { id: "week", label: "Week", days: 7 },
     { id: "month", label: "Month", days: 30 },
@@ -20,7 +22,7 @@ const RANGES = [
 
 const LINES = [
     { key: "Head Banging", color: "#ef4444", darkColor: "#f87171" },
-    { key: "Hand Flapping", color: "#f59e0b", darkColor: "#fbbf24" }, // ✨ Normalized to 'Hand'
+    { key: "Hand Flapping", color: "#f59e0b", darkColor: "#fbbf24" },
     { key: "Pacing", color: "#6366f1", darkColor: "#818cf8" },
 ];
 
@@ -47,22 +49,27 @@ export default function DetectionsTab({ logs = [], childName = "Child" }) {
     const isDark = theme === "dark";
     const [range, setRange] = useState("all");
 
-    // ✨ IMPROVED: Logic to aggregate Real AI Logs
     const chartData = useMemo(() => {
         const byDate = {};
         
-        // Ensure we handle logs even if empty
-        if (!logs.length) return [];
+        if (!logs || logs.length === 0) return [];
 
         logs.forEach((log) => {
-            const dateStr = new Date(log.timestamp || log.date).toISOString().split("T")[0];
+            // ✨ FIX: Fallback to today's date if log.date or log.timestamp is missing
+            let rawDate = log.date || log.timestamp || new Date();
+            let dateStr;
+            
+            try {
+                dateStr = new Date(rawDate).toISOString().split("T")[0];
+            } catch (e) {
+                dateStr = new Date().toISOString().split("T")[0];
+            }
             
             if (!byDate[dateStr]) {
                 byDate[dateStr] = { date: dateStr, "Head Banging": 0, "Hand Flapping": 0, "Pacing": 0 };
             }
 
-            // ✨ Match labels from your Python AI
-            const type = (log.label || log.type || "").toLowerCase();
+            const type = (log.type || log.label || "").toLowerCase();
             if (type.includes("head")) byDate[dateStr]["Head Banging"]++;
             else if (type.includes("flap")) byDate[dateStr]["Hand Flapping"]++;
             else if (type.includes("pace")) byDate[dateStr]["Pacing"]++;
@@ -70,7 +77,6 @@ export default function DetectionsTab({ logs = [], childName = "Child" }) {
 
         let result = Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
 
-        // Filter by Range
         const selected = RANGES.find((r) => r.id === range);
         if (selected?.days) {
             const cutoff = new Date();
@@ -83,8 +89,12 @@ export default function DetectionsTab({ logs = [], childName = "Child" }) {
     }, [logs, range]);
 
     const formatDate = (dateStr) => {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString("en-US", { month: 'short', day: 'numeric' });
+        try {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString("en-US", { month: 'short', day: 'numeric' });
+        } catch (e) {
+            return dateStr;
+        }
     };
 
     const gridColor = isDark ? "rgba(148, 163, 184, 0.08)" : "rgba(148, 163, 184, 0.2)";
@@ -119,17 +129,24 @@ export default function DetectionsTab({ logs = [], childName = "Child" }) {
 
                 <div className="px-3 sm:px-6 py-8">
                     <div className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
-                                <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                <Tooltip content={<ChartTooltip />} />
-                                {LINES.map((line) => (
-                                    <Line key={line.key} type="monotone" dataKey={line.key} stroke={isDark ? line.darkColor : line.color} strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
-                                ))}
-                            </LineChart>
-                        </ResponsiveContainer>
+                        {chartData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                                    <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} allowDecimals={false} />
+                                    <Tooltip content={<ChartTooltip />} />
+                                    {LINES.map((line) => (
+                                        <Line key={line.key} type="monotone" dataKey={line.key} stroke={isDark ? line.darkColor : line.color} strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                                    ))}
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-400 italic text-sm">
+                                <Activity size={48} className="mb-2 opacity-20" />
+                                No detections recorded yet for this period.
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

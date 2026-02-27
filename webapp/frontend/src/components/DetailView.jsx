@@ -8,6 +8,19 @@ import { getEmotionBoxStyle, getEmotionIcon } from '../utils/emotionUtils';
 const DetailView = ({ log, onClose, childName = "Child" }) => {
     if (!log) return null;
 
+    // ✨ ONLY ADDED: Smart Image Logic for Base64 support
+    let imageSrc = null;
+    if (log.image) {
+        const imgStr = log.image.trim();
+        if (imgStr.startsWith('http')) {
+            imageSrc = imgStr;
+        } else if (imgStr.startsWith('data:image')) {
+            imageSrc = imgStr;
+        } else {
+            imageSrc = `data:image/jpeg;base64,${imgStr.replace(/\s/g, '')}`;
+        }
+    }
+
     return (
         <motion.div
             layoutId="detail-view"
@@ -15,10 +28,9 @@ const DetailView = ({ log, onClose, childName = "Child" }) => {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            // INCREASED WIDTH FOR PC/LAPTOP HERE (xl:w-[600px] instead of 450px)
             className="fixed inset-0 z-40 md:absolute md:inset-0 lg:absolute lg:inset-y-0 lg:right-0 lg:left-auto lg:w-[500px] lg:border-l lg:border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden flex flex-col transition-colors duration-300"
         >
-            {/* BACK BUTTON (VISIBLE ON MOBILE/TABLET, OPTIONAL ON XL) */}
+            {/* BACK BUTTON */}
             <div className="p-4 md:p-6 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md sticky top-0 z-10 transition-colors duration-300">
                 <button
                     onClick={onClose}
@@ -46,7 +58,9 @@ const DetailView = ({ log, onClose, childName = "Child" }) => {
                     transition={{ delay: 0.2 }}
                     className="aspect-[4/3] rounded-[2rem] overflow-hidden shadow-xl bg-slate-100 dark:bg-slate-800 relative group"
                 >
-                    <img src={log.image} alt="Detail" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    {/* ✨ UPDATED: src now uses the smart imageSrc variable */}
+                    <img src={imageSrc} alt="Detail" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
                     <div className="absolute bottom-6 left-6 right-6 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform">
                         <div className="flex items-center gap-2 mb-2">
