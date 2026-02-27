@@ -1,14 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-    Activity, FileText, ArrowLeft, ShieldCheck
+    Activity, FileText, ArrowLeft, ShieldCheck, Target
 } from 'lucide-react';
 import { getEmotionBoxStyle, getEmotionIcon } from '../utils/emotionUtils';
 
 const DetailView = ({ log, onClose, childName = "Child" }) => {
     if (!log) return null;
 
-    // ✨ ONLY ADDED: Smart Image Logic for Base64 support
+    // Smart Image Logic for Base64 support
     let imageSrc = null;
     if (log.image) {
         const imgStr = log.image.trim();
@@ -20,6 +20,9 @@ const DetailView = ({ log, onClose, childName = "Child" }) => {
             imageSrc = `data:image/jpeg;base64,${imgStr.replace(/\s/g, '')}`;
         }
     }
+
+    // Calculate Accuracy Percentage
+    const accuracyPercent = Math.round((log.accuracy || log.confidence || 0) * 100);
 
     return (
         <motion.div
@@ -58,7 +61,6 @@ const DetailView = ({ log, onClose, childName = "Child" }) => {
                     transition={{ delay: 0.2 }}
                     className="aspect-[4/3] rounded-[2rem] overflow-hidden shadow-xl bg-slate-100 dark:bg-slate-800 relative group"
                 >
-                    {/* ✨ UPDATED: src now uses the smart imageSrc variable */}
                     <img src={imageSrc} alt="Detail" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
@@ -73,6 +75,7 @@ const DetailView = ({ log, onClose, childName = "Child" }) => {
 
                 <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
+                        {/* EMOTION BLOCK */}
                         <div className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex flex-col items-center text-center gap-3 transition-colors duration-300">
                             <div className={`p-3 rounded-2xl ${getEmotionBoxStyle(log.emotion)}`}>
                                 {getEmotionIcon(log.emotion)}
@@ -82,13 +85,15 @@ const DetailView = ({ log, onClose, childName = "Child" }) => {
                                 <p className="text-lg font-black text-slate-800 dark:text-white">{log.emotion}</p>
                             </div>
                         </div>
+
+                        {/* ACCURACY BLOCK (Replaced Intensity) */}
                         <div className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex flex-col items-center text-center gap-3 transition-colors duration-300">
                             <div className="p-3 rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
-                                <Activity size={28} strokeWidth={2.5} />
+                                <Target size={28} strokeWidth={2.5} />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Intensity</p>
-                                <p className="text-lg font-black text-slate-800 dark:text-white">High</p>
+                                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Accuracy</p>
+                                <p className="text-lg font-black text-slate-800 dark:text-white">{accuracyPercent}%</p>
                             </div>
                         </div>
                     </div>
@@ -100,7 +105,7 @@ const DetailView = ({ log, onClose, childName = "Child" }) => {
                         <p className="text-indigo-900/80 dark:text-indigo-200 leading-7 font-medium">
                             {log.details}
                             <br /><br />
-                            The AI suggests this behavior might be triggered by external auditory stimuli appearing around 14:00.
+                            AI captured this event with a accuracy level of {accuracyPercent}%. This detection occurred during the active monitoring session.
                         </p>
                     </div>
                 </div>
