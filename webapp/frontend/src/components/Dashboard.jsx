@@ -33,7 +33,7 @@ const Dashboard = () => {
   // ✨ FINAL SOCKET LISTENER WITH DIAGNOSTICS
   useEffect(() => {
     // Replace with your laptop's actual IP
-    const socket = io("http://192.168.1.9:5000");
+    const socket = io("http://10.98.218.151:5000");
 
     socket.on("connect", () => {
       console.log("✅ Dashboard connected to Socket.io");

@@ -77,8 +77,8 @@ function ensureUserLogs(userId) {
       {
         id: Date.now() + 1,
         time: "10:12 AM",
-        date: new Date().toISOString().slice(0, 10),
-        type: "Hand Flap",
+        date: new Date().toISOString().split('T')[0], // Standardized mock date
+        type: "Hand Flapping",
         emotion: "happy",
         confidence: 0.87,
         accuracy: 0.87,
@@ -117,21 +117,21 @@ passport.deserializeUser((id, done) => {
 // 4. FIXED: AI DETECTION ENDPOINT
 // ---------------------------------------------------------
 app.post("/api/ai/detection", (req, res) => {
-  // We extract all possible naming variations from the Python payload
   const { action, type, label, emotion, accuracy, confidence, frame, image, date, time } = req.body;
   
   // Choose the best available values
   const finalType = action || type || label || "Unknown Behavior";
   const finalAccuracy = accuracy || confidence || 0;
-  const imageData = image || frame; // This catches the Base64 string regardless of key name
+  const imageData = image || frame;
 
   const targetUserId = "admin-1";
   const logs = ensureUserLogs(targetUserId);
 
+  // ✨ STANDARDIZED: date is now YYYY-MM-DD for chart compatibility
   const newLog = {
     id: Date.now(),
     time: time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    date: date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    date: date || new Date().toISOString().split('T')[0], 
     type: finalType,
     emotion: emotion || "Neutral",
     accuracy: finalAccuracy,
@@ -145,11 +145,11 @@ app.post("/api/ai/detection", (req, res) => {
   // 5. BROADCAST TO FRONTEND
   io.emit("NEW_DETECTION", newLog);
 
-  console.log(`[AI Event]: ${finalType} broadcasted. Image status: ${imageData ? 'Length ' + imageData.length : 'EMPTY'}`);
+  console.log(`[AI Event]: ${finalType} broadcasted. Image status: ${imageData ? 'Received' : 'EMPTY'}`);
   res.json({ ok: true, message: "Detection broadcasted" });
 });
 
-// --- AUTH & PROFILE ROUTES (UNCHANGED) ---
+// --- AUTH & PROFILE ROUTES ---
 
 app.get("/", (req, res) => res.send("OK - backend is running"));
 
@@ -206,7 +206,7 @@ app.get("/api/Logs", requireAuth, (req, res) => {
 app.put("/api/Profile/Tutorial", requireAuth, (req, res) => {
   const user = users.find((u) => u.id === req.user.id);
   if (!user) return res.status(404).json({ ok: false, message: "User not found" });
-  if (!user.profile) user.profile = { child: null, caregiverRole: "Parent", caregiverName: "", hasCompletedTutorial: false };
+  if (!user.profile) user.profile = { child: null, caregiverRole: "Parent", hasCompletedTutorial: false };
   user.profile.hasCompletedTutorial = true;
   res.json({ ok: true, message: "Tutorial completed" });
 });
